@@ -268,11 +268,28 @@ pub struct Auto {
     probe_after: Option<Instant>,
     /// How long that wait is; shorter in tests.
     pub(crate) re_probe: Duration,
+    /// Builds the headless session on first use.
+    make_headless: fn() -> Headless,
 }
 
 impl Auto {
     pub fn new(addr: impl Into<String>) -> Self {
-        Self { remote: Remote::lazy(addr), headless: None, on_app: false, probe_after: None, re_probe: PROBE_INTERVAL }
+        Self {
+            remote: Remote::lazy(addr),
+            headless: None,
+            on_app: false,
+            probe_after: None,
+            re_probe: PROBE_INTERVAL,
+            make_headless: Headless::with_document,
+        }
+    }
+
+    /// Build the headless session with `make` instead of [`Headless::with_document`], so it gets
+    /// what the embedder's own headless mode attaches (the CLI's stored PDF presets, profiles and
+    /// plug-ins).
+    pub fn with_headless(mut self, make: fn() -> Headless) -> Self {
+        self.make_headless = make;
+        self
     }
 
     /// The address an app is looked for at.
@@ -335,7 +352,8 @@ impl Auto {
     }
 
     fn session(&mut self) -> &mut Headless {
-        self.headless.get_or_insert_with(Headless::with_document)
+        let make = self.make_headless;
+        self.headless.get_or_insert_with(make)
     }
 }
 

@@ -262,7 +262,7 @@ fn mcp(args: &[String]) -> Result<(), String> {
         // No mode asked for: use the app when one answers and an in-process headless session
         // otherwise, either way from the start of the session to its end. A client that starts the
         // server before the user opens VectorCraft must still reach that app (#1470).
-        Box::new(Auto::new(DEFAULT_ADDR))
+        Box::new(Auto::new(DEFAULT_ADDR).with_headless(|| with_stores(Headless::with_document())))
     };
     eprintln!("vectorcraft-cli: MCP server on stdio ({})", backend.describe());
     // The binary owns the logger, not the library: installing one here keeps an embedder that

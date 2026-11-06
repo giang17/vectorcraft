@@ -11,7 +11,7 @@ use std::time::{Duration, Instant};
 
 use serde_json::{Value, json};
 
-use crate::{Auto, Backend, Server};
+use crate::{Auto, Backend, Headless, Server};
 
 /// How long a test lets `Auto` wait before looking for the app again.
 const PROBE: Duration = Duration::from_millis(10);
@@ -128,6 +128,24 @@ fn without_an_app_the_session_is_headless_and_says_so() {
     assert!(described.starts_with("headless") && described.contains("takes over"), "{described}");
     // The session is a real document, so drawing works without an app.
     a.call("engine.execute", json!({"command": "shape.rectangle", "params": {"x": 1, "y": 1, "width": 5, "height": 5}})).unwrap();
+    drop(held);
+}
+
+/// Calls reach the session `with_headless` builds: the CLI attaches its stored PDF presets,
+/// profiles and plug-ins there, as its `--headless` mode does.
+#[test]
+fn the_headless_session_comes_from_the_embedders_builder() {
+    static BUILT: AtomicBool = AtomicBool::new(false);
+    fn build() -> Headless {
+        BUILT.store(true, Ordering::SeqCst);
+        Headless::with_document()
+    }
+    let _turn = crate::logging::test_turn();
+    let (port, held) = hold_port();
+    let mut a = auto(format!("127.0.0.1:{port}")).with_headless(build);
+    assert!(!BUILT.load(Ordering::SeqCst), "built on first use, not up front");
+    a.call("document.inspect", json!({})).unwrap();
+    assert!(BUILT.load(Ordering::SeqCst), "the call reached a session from the builder");
     drop(held);
 }
 
