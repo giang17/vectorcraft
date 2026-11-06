@@ -4,6 +4,7 @@ use serde_json::{Value, json};
 
 use crate::{Backend, Headless, PROTOCOL_VERSION, Remote, Server, tool_definitions};
 
+mod auto;
 mod batchdraw;
 mod concurrency;
 mod conventions;
